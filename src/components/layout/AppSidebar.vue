@@ -1,25 +1,57 @@
 <!-- components/layout/AppSidebar.vue -->
 <template>
   <a-layout-sider
-      v-model:collapsed="collapsed"
+      v-model:collapsed="collapsedValue"
       class="app-sidebar"
       :width="240"
+      :collapsed-width="80"
       :trigger="null"
       collapsible
   >
-    <!-- Logo区域 -->
-    <div class="sidebar-logo">
-      <cloud-outlined class="logo-icon" />
-      <span class="logo-text" v-if="!collapsed">智能云图库</span>
+    <!-- 顶部标题区域 -->
+    <div class="sidebar-header">
+      <div class="logo-container">
+        <div class="logo-icon-wrapper">
+          <cloud-outlined class="logo-icon" />
+        </div>
+        <h1 class="logo-title" v-if="!collapsedValue">智能云图库</h1>
+      </div>
     </div>
 
-    <!-- 侧边栏菜单 -->
-    <a-menu
-        v-model:selectedKeys="selectedKeys"
-        mode="inline"
-        :items="menuItems"
-        class="sidebar-menu"
-    ></a-menu>
+    <!-- 侧边栏内容容器 -->
+    <div class="sidebar-container">
+      <!-- 分组标题：主要菜单 -->
+      <div class="menu-group-title" v-if="!collapsedValue">主要菜单</div>
+
+      <!-- 主要菜单项 -->
+      <div class="menu-items">
+        <div
+            v-for="item in mainMenuItems"
+            :key="item.key"
+            :class="['menu-item', {'active': selectedKeys.includes(item.key)}]"
+            @click="selectMenuItem(item.key)"
+        >
+          <component :is="item.icon" class="menu-item-icon" />
+          <span class="menu-item-label" v-if="!collapsedValue">{{ item.label }}</span>
+        </div>
+      </div>
+
+      <!-- 分组标题：收藏分类 -->
+      <div class="menu-group-title" v-if="!collapsedValue">收藏分类</div>
+
+      <!-- 收藏分类菜单项 -->
+      <div class="menu-items">
+        <div
+            v-for="item in favoriteMenuItems"
+            :key="item.key"
+            :class="['menu-item', {'active': selectedKeys.includes(item.key)}]"
+            @click="selectMenuItem(item.key)"
+        >
+          <component :is="item.icon" class="menu-item-icon" />
+          <span class="menu-item-label" v-if="!collapsedValue">{{ item.label }}</span>
+        </div>
+      </div>
+    </div>
 
     <!-- 创建新团队按钮 -->
     <div class="sidebar-footer">
@@ -30,14 +62,14 @@
           @click="handleCreateTeam"
       >
         <template #icon><plus-outlined /></template>
-        创建新团队
+        <span v-if="!collapsedValue">创建新团队</span>
       </a-button>
     </div>
   </a-layout-sider>
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, h } from 'vue'; // 添加h函数导入
+import { ref, computed } from 'vue';
 import {
   CloudOutlined,
   PictureOutlined,
@@ -50,66 +82,76 @@ import {
   PlusOutlined
 } from '@ant-design/icons-vue';
 
-// 侧边栏折叠状态
-const collapsed = ref(false);
+// 接收props
+const props = defineProps({
+  collapsed: {
+    type: Boolean,
+    default: false
+  }
+});
+
+// 定义事件
+const emit = defineEmits(['update:collapsed']);
+
+// 计算属性处理双向绑定
+const collapsedValue = computed({
+  get: () => props.collapsed,
+  set: (value) => emit('update:collapsed', value)
+});
 
 // 选中的菜单项
 const selectedKeys = ref(['public-gallery']);
 
-// 菜单数据结构
-const menuItems = reactive([
+// 主要菜单数据
+const mainMenuItems = [
   {
-    type: 'group',
-    title: '主要菜单',
-    children: [
-      {
-        key: 'public-gallery',
-        icon: () => h(PictureOutlined), // 使用h函数替代JSX
-        label: '公共图库',
-      },
-      {
-        key: 'my-space',
-        icon: () => h(FolderOutlined), // 使用h函数替代JSX
-        label: '我的空间',
-      },
-      {
-        key: 'team-collaboration',
-        icon: () => h(TeamOutlined), // 使用h函数替代JSX
-        label: '团队协作',
-      },
-      {
-        key: 'explore',
-        icon: () => h(CompassOutlined), // 使用h函数替代JSX
-        label: '探索发现',
-      },
-    ],
+    key: 'public-gallery',
+    icon: PictureOutlined,
+    label: '公共图库',
   },
   {
-    type: 'group',
-    title: '收藏分类',
-    children: [
-      {
-        key: 'my-favorites',
-        icon: () => h(HeartOutlined), // 使用h函数替代JSX
-        label: '我的收藏',
-      },
-      {
-        key: 'saved',
-        icon: () => h(BookOutlined), // 使用h函数替代JSX
-        label: '已保存',
-      },
-      {
-        key: 'recent-viewed',
-        icon: () => h(ClockCircleOutlined), // 使用h函数替代JSX
-        label: '最近浏览',
-      },
-    ],
+    key: 'my-space',
+    icon: FolderOutlined,
+    label: '我的空间',
   },
-]);
+  {
+    key: 'team-collaboration',
+    icon: TeamOutlined,
+    label: '团队协作',
+  },
+  {
+    key: 'explore',
+    icon: CompassOutlined,
+    label: '探索发现',
+  },
+];
+
+// 收藏分类菜单数据
+const favoriteMenuItems = [
+  {
+    key: 'my-favorites',
+    icon: HeartOutlined,
+    label: '我的收藏',
+  },
+  {
+    key: 'saved',
+    icon: BookOutlined,
+    label: '已保存',
+  },
+  {
+    key: 'recent-viewed',
+    icon: ClockCircleOutlined,
+    label: '最近浏览',
+  },
+];
+
+// 菜单项选择处理
+const selectMenuItem = (key) => {
+  selectedKeys.value = [key];
+};
 
 // 创建团队处理函数
 const handleCreateTeam = () => {
-  // 处理创建团队逻辑
   console.log('创建新团队');
 };
 </script>
@@ -123,54 +165,200 @@ const handleCreateTeam = () => {
   top: 0;
   bottom: 0;
   z-index: 10;
-  background: white; /* 添加白色背景与头部和页脚保持一致 */
+  background: white;
+  transition: width 0.3s cubic-bezier(0.2, 0, 0, 1) 0s;
+  display: flex;
+  flex-direction: column;
+  border-radius: 0 16px 16px 0;
 }
 
-.sidebar-logo {
+/* 顶部标题区域 */
+.sidebar-header {
   height: 64px;
+  padding: 0 16px;
   display: flex;
   align-items: center;
-  padding: 0 16px;
-  border-bottom: 1px solid var(--border-color);
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.logo-container {
+  display: flex;
+  align-items: center;
+  height: 100%;
+}
+
+.logo-icon-wrapper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .logo-icon {
   font-size: 24px;
-  color: var(--primary-color);
+  color: #4F46E5;
 }
 
-.logo-text {
+.logo-title {
+  margin: 0 0 0 12px;
   font-size: 18px;
   font-weight: 600;
-  margin-left: 12px;
+  color: #000;
+  white-space: nowrap;
+}
+
+/* 侧边栏内容容器，使用flex布局 */
+.sidebar-container {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  padding: 16px 0;
+  overflow-y: auto;
+}
+
+/* 菜单分组标题 */
+.menu-group-title {
+  color: #616161;
+  font-size: 14px;
+  font-weight: 500;
+  padding: 8px 16px;
+  margin-top: 8px;
+  margin-bottom: 4px;
+}
+
+/* 菜单项容器 */
+.menu-items {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+/* 单个菜单项 */
+.menu-item {
+  display: flex;
+  align-items: center;
+  height: 48px;
+  padding: 0 16px;
+  cursor: pointer;
+  transition: all 0.2s;
+  border-radius: 8px;
+  margin: 0 8px;
+}
+
+.menu-item:hover {
+  background-color: rgba(0, 0, 0, 0.04);
+}
+
+.menu-item.active {
+  background-color: #EFF1FF;
+}
+
+.menu-item.active .menu-item-icon {
+  color: #4F46E5;
+}
+
+.menu-item.active .menu-item-label {
+  color: #4F46E5;
+  font-weight: 500;
+}
+
+/* 菜单项图标 */
+.menu-item-icon {
+  font-size: 18px;
+  color: #303030;
+  margin-right: 12px;
+}
+
+/* 菜单项标签 */
+.menu-item-label {
+  font-size: 14px;
+  color: #202020;
+  font-weight: 500;
   white-space: nowrap;
   overflow: hidden;
-  color: var(--text-primary); /* 确保文字颜色一致 */
+  text-overflow: ellipsis;
 }
 
-.sidebar-menu {
-  border-right: none;
-  padding: 12px;
-}
-
+/* 底部按钮区域 */
 .sidebar-footer {
-  position: absolute;
-  bottom: 20px;
-  width: 100%;
-  padding: 0 16px;
+  padding: 16px;
+  margin-top: auto;
 }
 
+/* 创建新团队按钮 */
 .create-team-btn {
+  height: 48px;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-light) 100%); /* 与头部上传按钮保持一致的渐变背景 */
+  background: #4F46E5;
   border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  box-shadow: 0 2px 10px rgba(79, 70, 229, 0.2);
+  transition: all 0.3s;
+}
+
+.create-team-btn:hover {
+  background: #4338CA;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(79, 70, 229, 0.25);
+}
+
+.create-team-btn .anticon {
+  font-size: 16px;
+}
+
+/* 折叠状态下的按钮样式 */
+:deep(.ant-layout-sider-collapsed) .create-team-btn {
+  padding: 0;
+  width: 48px !important;
+  height: 48px;
+  margin: 0 auto;
+}
+
+/* 折叠状态下的图标居中显示 */
+:deep(.ant-layout-sider-collapsed) .menu-item {
+  padding: 0;
+  justify-content: center;
+}
+
+:deep(.ant-layout-sider-collapsed) .menu-item-icon {
+  margin-right: 0;
+}
+
+:deep(.ant-layout-sider-collapsed) .logo-icon-wrapper {
+  margin: 0 auto;
 }
 
 /* 深色模式下的样式调整 */
 :global([data-theme="dark"]) .app-sidebar {
   background: var(--bg-white);
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+:global([data-theme="dark"]) .sidebar-header {
+  border-bottom-color: var(--border-color);
+}
+
+:global([data-theme="dark"]) .logo-title {
+  color: var(--text-primary);
+}
+
+:global([data-theme="dark"]) .menu-item:hover {
+  background-color: rgba(255, 255, 255, 0.08);
+}
+
+:global([data-theme="dark"]) .menu-item.active {
+  background-color: rgba(99, 102, 241, 0.2);
+}
+
+:global([data-theme="dark"]) .menu-item-icon,
+:global([data-theme="dark"]) .menu-item-label {
+  color: var(--text-primary);
+}
+
+:global([data-theme="dark"]) .menu-group-title {
+  color: var(--text-secondary);
 }
 </style>

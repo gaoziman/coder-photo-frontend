@@ -1,34 +1,41 @@
 <!-- App.vue -->
 <template>
   <a-config-provider :theme="themeConfig">
-    <AppLayout>
-      <!-- 路由视图容器 -->
-      <router-view v-slot="{ Component }">
-        <!-- 使用过渡效果增强用户体验 -->
-        <transition name="fade" mode="out-in">
-          <keep-alive :include="cachedViews">
-            <component :is="Component" />
-          </keep-alive>
-        </transition>
-      </router-view>
-    </AppLayout>
+    <div class="app-container" :data-theme="isDarkMode ? 'dark' : 'light'">
+      <AppLayout>
+        <!-- 路由视图容器 -->
+        <router-view v-slot="{ Component }">
+          <!-- 使用过渡效果增强用户体验 -->
+          <transition name="fade" mode="out-in">
+            <keep-alive :include="cachedViews">
+              <component :is="Component" />
+            </keep-alive>
+          </transition>
+        </router-view>
+      </AppLayout>
 
-    <!-- 全局消息通知 -->
-    <a-message />
+      <!-- 全局消息通知 -->
+      <a-message />
 
-    <!-- 全局确认对话框 -->
-    <a-modal v-model:visible="confirmVisible" :title="confirmTitle" @ok="handleConfirm">
-      {{ confirmMessage }}
-    </a-modal>
+      <!-- 全局确认对话框 -->
+      <a-modal v-model:visible="confirmVisible" :title="confirmTitle" @ok="handleConfirm">
+        {{ confirmMessage }}
+      </a-modal>
+
+      <!-- 登录/注册弹窗 -->
+      <auth-modal ref="loginModalRef" />
+    </div>
   </a-config-provider>
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, provide, onMounted } from 'vue';
+import { ref, reactive, provide, onMounted, nextTick } from 'vue';
 import { useRoute } from 'vue-router';
 import AppLayout from '@/components/layout/AppLayout.vue';
 import { useDarkMode } from '@/composables/useDarkMode';
 import emitter from '@/utils/eventBus';
+import { registerApp } from '@/router';
+import AuthModal from "@/components/auth/AuthModal.vue";
 
 // 主题配置
 const themeConfig = reactive({
@@ -71,6 +78,9 @@ const initGlobalConfirm = () => {
 // 初始化暗黑模式
 const { isDarkMode, toggleDarkMode } = useDarkMode();
 
+// 引用 login-modal 组件，用于打开登录模态窗口
+const loginModalRef = ref();
+
 // 将全局函数和状态提供给子组件
 provide('toggleDarkMode', toggleDarkMode);
 provide('isDarkMode', isDarkMode);
@@ -86,12 +96,30 @@ onMounted(() => {
       console.log('页面处于前台，可以刷新数据');
     }
   });
+
+  // 监听打开登录模态窗口事件
+  window.addEventListener('openLoginModal', () => {
+    nextTick(() => {
+      loginModalRef.value?.open();
+    });
+  });
+
+  // 注册 app 实例，使路由守卫可以访问全局组件
+  registerApp({
+    config: {
+      globalProperties: {
+        openLoginModal: () => {
+          loginModalRef.value?.open();
+        }
+      }
+    }
+  } as any);
 });
 </script>
 
 <style>
 /* 引入全局样式 */
-@import './assets/styles/base.css';
+@import '@/assets/styles/base.css';
 
 /* 路由过渡动画 */
 .fade-enter-active,
@@ -112,6 +140,36 @@ onMounted(() => {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   color: var(--text-primary);
+}
+
+/* 应用容器 */
+.app-container {
+  min-height: 100vh;
+  transition: background-color 0.3s ease;
+}
+
+/* 数据主题样式 - 亮色主题 */
+[data-theme="light"] {
+  --bg-white: #ffffff;
+  --bg-gray: #f9fafb;
+  --bg-gray-light: #f3f4f6;
+  --text-primary: rgba(0, 0, 0, 0.85);
+  --text-secondary: rgba(0, 0, 0, 0.45);
+  --border-color: #e5e7eb;
+  --primary-color: #4F46E5;
+  --primary-light: #818cf8;
+}
+
+/* 数据主题样式 - 深色主题 */
+[data-theme="dark"] {
+  --bg-white: #1f1f1f;
+  --bg-gray: #141414;
+  --bg-gray-light: #262626;
+  --text-primary: rgba(255, 255, 255, 0.85);
+  --text-secondary: rgba(255, 255, 255, 0.45);
+  --border-color: #303030;
+  --primary-color: #4F46E5;
+  --primary-light: #818cf8;
 }
 
 /* 滚动条样式优化 */

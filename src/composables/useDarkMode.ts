@@ -1,57 +1,46 @@
-/* composables/useDarkMode.ts */
-import { ref, watch } from 'vue';
-import { useLocalStorage } from '@vueuse/core';
+// composables/useDarkMode.ts
+import { ref, onMounted, watch } from 'vue';
 
 export function useDarkMode() {
-    // 使用本地存储保存用户的深色模式偏好
-    const isDarkMode = useLocalStorage('dark-mode', false);
+    // 深色模式状态
+    const isDarkMode = ref(false);
 
-    // CSS 类处理函数
-    const updateTheme = (dark: boolean) => {
-        // 根据深色模式状态添加或移除 HTML 根元素上的 class
-        if (dark) {
-            document.documentElement.classList.add('dark');
-            document.body.setAttribute('data-theme', 'dark');
-        } else {
-            document.documentElement.classList.remove('dark');
-            document.body.setAttribute('data-theme', 'light');
+    // 从本地存储初始化深色模式状态
+    onMounted(() => {
+        const savedTheme = localStorage.getItem('theme_mode');
+        if (savedTheme === 'dark') {
+            isDarkMode.value = true;
+        } else if (savedTheme === null) {
+            // 如果没有保存过主题，检查系统主题偏好
+            const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+            isDarkMode.value = prefersDark;
         }
-    };
+    });
 
-    // 在状态变化时更新 CSS
-    watch(
-        () => isDarkMode.value,
-        (newValue) => {
-            updateTheme(newValue);
-        },
-        { immediate: true } // 立即执行一次
-    );
-
-    // 切换深色/浅色模式
+    // 切换深色模式
     const toggleDarkMode = () => {
         isDarkMode.value = !isDarkMode.value;
+        localStorage.setItem('theme_mode', isDarkMode.value ? 'dark' : 'light');
     };
 
-    // 检测系统偏好
-    const detectSystemPreference = () => {
-        if (isDarkMode.value !== null) return; // 用户已有设置，不覆盖
-
-        // 检测系统深色模式偏好
-        const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-        isDarkMode.value = prefersDark;
-
-        // 监听系统偏好变化
-        window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', (e) => {
-            if (isDarkMode.value === null) { // 只有当用户未手动设置时才跟随系统
+    // 监听系统主题变化
+    onMounted(() => {
+        const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+        const handleChange = (e: MediaQueryListEvent) => {
+            // 只有当用户没有明确设置主题时才自动切换
+            if (!localStorage.getItem('theme_mode')) {
                 isDarkMode.value = e.matches;
             }
-        });
-    };
+        };
 
-    // 返回相关状态和方法
+        // 添加事件监听
+        if (mediaQuery.addEventListener) {
+            mediaQuery.addEventListener('change', handleChange);
+        }
+    });
+
     return {
         isDarkMode,
-        toggleDarkMode,
-        detectSystemPreference
+        toggleDarkMode
     };
 }

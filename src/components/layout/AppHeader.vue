@@ -11,9 +11,9 @@
           class="header-nav-menu"
       ></a-menu>
 
-      <!-- 内容管理下拉菜单 -->
+      <!-- 内容管理下拉菜单 - 仅当用户为管理员时显示 -->
       <a-dropdown
-          v-if="isAdmin"
+          v-if="userStore.isAdmin"
           overlay-class-name="enhanced-admin-dropdown"
           :trigger="['click']"
           placement="bottomLeft"
@@ -68,9 +68,8 @@
       </a-dropdown>
 
       <!-- 系统设置下拉菜单 -->
-      <!-- 系统设置下拉菜单 -->
       <a-dropdown
-          v-if="isAdmin"
+          v-if="userStore.isAdmin"
           overlay-class-name="enhanced-admin-dropdown"
           :trigger="['click']"
           placement="bottomLeft"
@@ -109,46 +108,73 @@
 
     <!-- 右侧工具栏 -->
     <div class="header-actions">
-      <!-- 上传按钮 -->
-      <a-button type="primary" class="upload-btn">
-        <template #icon><upload-outlined /></template>
-        上传图片
-      </a-button>
-
-      <!-- 深色模式切换按钮 -->
-      <a-button
-          type="text"
-          class="theme-toggle-btn"
-          @click="toggleDarkMode"
-          shape="circle"
-      >
-        <template #icon>
-          <moon-outlined v-if="!isDarkMode" />
-          <sun-outlined v-else />
-        </template>
-      </a-button>
-
-      <!-- 通知按钮 -->
-      <a-badge dot>
-        <a-button type="text" class="notification-btn" shape="circle">
-          <template #icon><bell-outlined /></template>
+      <!-- 未登录状态：显示登录按钮 -->
+      <template v-if="!userStore.isLoggedIn">
+        <a-button
+            type="primary"
+            class="login-btn"
+            @click="openLoginModal"
+            v-motion
+            :initial="{ opacity: 0, scale: 0.9 }"
+            :enter="{ opacity: 1, scale: 1, transition: { type: 'spring', stiffness: 300, damping: 20 } }"
+        >
+          <template #icon><login-outlined /></template>
+          登录
         </a-button>
-      </a-badge>
+      </template>
 
-      <!-- 用户头像 -->
-      <a-dropdown :trigger="['click']">
-        <a class="user-dropdown">
-          <a-avatar src="https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80" />
-        </a>
-        <template #overlay>
-          <a-menu>
-            <a-menu-item key="profile">个人资料</a-menu-item>
-            <a-menu-item key="settings">账号设置</a-menu-item>
-            <a-menu-divider />
-            <a-menu-item key="logout">退出登录</a-menu-item>
-          </a-menu>
-        </template>
-      </a-dropdown>
+      <!-- 已登录状态：显示上传按钮、通知、头像等 -->
+      <template v-else>
+        <!-- 上传按钮 -->
+        <a-button type="primary" class="upload-btn">
+          <template #icon><upload-outlined /></template>
+          上传图片
+        </a-button>
+
+        <!-- 深色模式切换按钮 -->
+        <a-button
+            type="text"
+            class="theme-toggle-btn"
+            @click="toggleDarkMode"
+            shape="circle"
+        >
+          <template #icon>
+            <moon-outlined v-if="!isDarkMode" />
+            <sun-outlined v-else />
+          </template>
+        </a-button>
+
+        <!-- 通知按钮 -->
+        <a-badge dot>
+          <a-button type="text" class="notification-btn" shape="circle">
+            <template #icon><bell-outlined /></template>
+          </a-button>
+        </a-badge>
+
+        <!-- 用户头像 -->
+        <a-dropdown :trigger="['click']" placement="bottomRight">
+          <a class="user-dropdown">
+            <a-avatar :src="userStore.userInfo?.avatar" />
+          </a>
+          <template #overlay>
+            <a-menu>
+              <a-menu-item key="profile">
+                <user-outlined />
+                个人资料
+              </a-menu-item>
+              <a-menu-item key="settings">
+                <setting-outlined />
+                账号设置
+              </a-menu-item>
+              <a-menu-divider />
+              <a-menu-item key="logout" @click="handleLogout">
+                <logout-outlined />
+                退出登录
+              </a-menu-item>
+            </a-menu>
+          </template>
+        </a-dropdown>
+      </template>
     </div>
   </a-layout-header>
 </template>
@@ -171,7 +197,16 @@ import {
   AppstoreOutlined,
   CommentOutlined,
   SafetyOutlined,
+  LoginOutlined,
+  LogoutOutlined,
+  LockOutlined
 } from '@ant-design/icons-vue';
+
+import { useUserStore } from '@/stores/user';
+import { message } from 'ant-design-vue';
+
+// 获取用户状态存储
+const userStore = useUserStore();
 
 // 从 App.vue 中注入的深色模式状态和切换函数
 const isDarkMode = inject('isDarkMode', ref(false));
@@ -180,8 +215,19 @@ const toggleDarkMode = inject('toggleDarkMode', () => {});
 // 当前选中的导航
 const selectedKeys = ref(['home']);
 
-// 判断是否为管理员（实际项目中应从用户数据或权限系统中获取）
-const isAdmin = ref(true);
+// 判断是否为管理员（基于用户角色）
+const isAdmin = computed(() => userStore.isAdmin);
+
+// 打开登录弹窗
+const openLoginModal = () => {
+  window.dispatchEvent(new CustomEvent('openLoginModal'));
+};
+
+// 处理退出登录
+const handleLogout = () => {
+  userStore.logout();
+  message.success('已成功退出登录');
+};
 
 // 使用渲染函数的方式定义主导航菜单项
 const mainMenuItems = reactive([
@@ -196,6 +242,11 @@ const mainMenuItems = reactive([
     label: '创建图片',
   },
 ]);
+
+// 暴露方法给父组件
+defineExpose({
+  openLoginModal
+});
 </script>
 
 <style scoped>
@@ -233,7 +284,7 @@ const mainMenuItems = reactive([
 }
 
 .admin-menu-link:hover {
-  color: var(--primary-color, #6366f1);
+  color: var(--primary-color, #4F46E5);
 }
 
 .admin-menu-link .anticon {
@@ -260,13 +311,36 @@ const mainMenuItems = reactive([
   font-size: 16px;
 }
 
-.upload-btn {
-  background: linear-gradient(135deg, var(--primary-color, #6366f1) 0%, var(--primary-light, #818cf8) 100%);
+/* 登录按钮样式 */
+.login-btn {
+  background: linear-gradient(135deg, var(--primary-color, #4F46E5) 0%, var(--primary-light, #818cf8) 100%);
   border: none;
   display: flex;
   align-items: center;
   height: 38px;
   border-radius: 6px;
+  box-shadow: 0 3px 10px rgba(79, 70, 229, 0.15);
+  transition: all 0.3s ease;
+}
+
+.login-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 5px 15px rgba(79, 70, 229, 0.25);
+}
+
+.upload-btn {
+  background: linear-gradient(135deg, var(--primary-color, #4F46E5) 0%, var(--primary-light, #818cf8) 100%);
+  border: none;
+  display: flex;
+  align-items: center;
+  height: 38px;
+  border-radius: 6px;
+  transition: all 0.3s ease;
+}
+
+.upload-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 5px 15px rgba(79, 70, 229, 0.25);
 }
 
 .notification-btn,
@@ -277,6 +351,13 @@ const mainMenuItems = reactive([
 
 .user-dropdown {
   cursor: pointer;
+  display: flex;
+  align-items: center;
+  transition: transform 0.2s ease;
+}
+
+.user-dropdown:hover {
+  transform: scale(1.05);
 }
 
 /* 深色模式下的样式调整 */
@@ -297,6 +378,7 @@ const mainMenuItems = reactive([
 :global([data-theme="dark"]) .admin-menu-link:hover {
   color: var(--primary-light, #818cf8);
 }
+
 /* 增强型下拉菜单样式 */
 .admin-link-content {
   display: flex;
@@ -370,13 +452,13 @@ const mainMenuItems = reactive([
 }
 
 :deep(.enhanced-admin-menu .ant-menu-item:hover) {
-  background-color: rgba(99, 102, 241, 0.08);
-  color: var(--primary-color, #6366f1);
+  background-color: rgba(79, 70, 229, 0.08);
+  color: var(--primary-color, #4F46E5);
 }
 
 :deep(.enhanced-admin-menu .ant-menu-item-selected) {
-  background-color: rgba(99, 102, 241, 0.12) !important;
-  color: var(--primary-color, #6366f1) !important;
+  background-color: rgba(79, 70, 229, 0.12) !important;
+  color: var(--primary-color, #4F46E5) !important;
 }
 
 /* 深色模式适配 */

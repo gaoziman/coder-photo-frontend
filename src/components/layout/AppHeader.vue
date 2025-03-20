@@ -12,51 +12,95 @@
       ></a-menu>
 
       <!-- 内容管理下拉菜单 -->
-      <a-dropdown v-if="isAdmin" overlay-class-name="admin-dropdown">
+      <a-dropdown
+          v-if="isAdmin"
+          overlay-class-name="enhanced-admin-dropdown"
+          :trigger="['click']"
+          placement="bottomLeft"
+      >
         <a class="admin-menu-link">
-          <appstore-outlined />
-          内容管理
+          <div class="admin-link-content">
+            <appstore-outlined />
+            <span>内容管理</span>
+            <down-outlined class="dropdown-arrow" />
+          </div>
         </a>
         <template #overlay>
-          <a-menu class="admin-menu">
-            <a-menu-item key="dashboard">
-              <dashboard-outlined /> 仪表盘
+          <a-menu class="enhanced-admin-menu">
+            <a-menu-item key="dashboard" class="menu-item-with-icon">
+              <div class="menu-item-content">
+                <dashboard-outlined />
+                <span>仪表盘</span>
+              </div>
             </a-menu-item>
-            <a-menu-item key="image-management">
-              <picture-outlined /> 图片管理
+            <a-menu-item key="image-management" class="menu-item-with-icon">
+              <div class="menu-item-content">
+                <picture-outlined />
+                <span>图片管理</span>
+              </div>
             </a-menu-item>
-            <a-menu-item key="space-management">
-              <inbox-outlined /> 空间管理
+            <a-menu-item key="space-management" class="menu-item-with-icon">
+              <div class="menu-item-content">
+                <inbox-outlined />
+                <span>空间管理</span>
+              </div>
             </a-menu-item>
-            <a-menu-item key="category-management">
-              <appstore-outlined /> 分类管理
+            <a-menu-item key="category-management" class="menu-item-with-icon">
+              <div class="menu-item-content">
+                <appstore-outlined />
+                <span>分类管理</span>
+              </div>
             </a-menu-item>
-            <a-menu-item key="tag-management">
-              <tags-outlined /> 标签管理
+            <a-menu-item key="tag-management" class="menu-item-with-icon">
+              <div class="menu-item-content">
+                <tags-outlined />
+                <span>标签管理</span>
+              </div>
             </a-menu-item>
-            <a-menu-item key="comment-management">
-              <comment-outlined /> 评论管理
+            <a-menu-item key="comment-management" class="menu-item-with-icon">
+              <div class="menu-item-content">
+                <comment-outlined />
+                <span>评论管理</span>
+              </div>
             </a-menu-item>
           </a-menu>
         </template>
       </a-dropdown>
 
       <!-- 系统设置下拉菜单 -->
-      <a-dropdown v-if="isAdmin" overlay-class-name="admin-dropdown">
+      <!-- 系统设置下拉菜单 -->
+      <a-dropdown
+          v-if="isAdmin"
+          overlay-class-name="enhanced-admin-dropdown"
+          :trigger="['click']"
+          placement="bottomLeft"
+      >
         <a class="admin-menu-link">
-          <setting-outlined />
-          系统设置
+          <div class="admin-link-content">
+            <setting-outlined />
+            <span>系统设置</span>
+            <down-outlined class="dropdown-arrow" />
+          </div>
         </a>
         <template #overlay>
-          <a-menu class="admin-menu">
-            <a-menu-item key="user-management">
-              <user-outlined /> 用户管理
+          <a-menu class="enhanced-admin-menu">
+            <a-menu-item key="user-management" class="menu-item-with-icon">
+              <div class="menu-item-content">
+                <user-outlined />
+                <span>用户管理</span>
+              </div>
             </a-menu-item>
-            <a-menu-item key="system-settings">
-              <setting-outlined /> 系统设置
+            <a-menu-item key="system-settings" class="menu-item-with-icon">
+              <div class="menu-item-content">
+                <setting-outlined />
+                <span>系统设置</span>
+              </div>
             </a-menu-item>
-            <a-menu-item key="security-center">
-              <safety-outlined /> 安全中心
+            <a-menu-item key="security-center" class="menu-item-with-icon">
+              <div class="menu-item-content">
+                <safety-outlined />
+                <span>安全中心</span>
+              </div>
             </a-menu-item>
           </a-menu>
         </template>
@@ -252,5 +296,103 @@ const mainMenuItems = reactive([
 
 :global([data-theme="dark"]) .admin-menu-link:hover {
   color: var(--primary-light, #818cf8);
+}
+/* 增强型下拉菜单样式 */
+.admin-link-content {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.dropdown-arrow {
+  font-size: 12px;
+  margin-left: 2px;
+  transition: transform 0.3s ease;
+}
+
+.admin-menu-link:hover .dropdown-arrow {
+  transform: rotate(180deg);
+}
+
+/* 定制下拉菜单容器 */
+:deep(.enhanced-admin-dropdown) {
+  min-width: 220px;
+  animation: dropdownFadeIn 0.25s ease-out;
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.08), 0 3px 6px rgba(0, 0, 0, 0.05);
+  border-radius: 8px;
+  overflow: hidden;
+  padding: 6px 0;
+}
+
+/* 下拉动画 */
+@keyframes dropdownFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* 菜单项样式 */
+.enhanced-admin-menu {
+  padding: 4px;
+  background: white;
+  border-radius: 8px;
+}
+
+.menu-item-with-icon {
+  height: 44px !important;
+  line-height: 44px !important;
+  margin: 4px 0;
+  padding: 0 16px;
+  border-radius: 6px;
+  transition: all 0.2s ease;
+}
+
+.menu-item-content {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.menu-item-content .anticon {
+  font-size: 18px;
+  opacity: 0.8;
+}
+
+/* 菜单项悬停效果 */
+:deep(.enhanced-admin-menu .ant-menu-item) {
+  margin: 4px 6px !important;
+  border-radius: 6px;
+}
+
+:deep(.enhanced-admin-menu .ant-menu-item:hover) {
+  background-color: rgba(99, 102, 241, 0.08);
+  color: var(--primary-color, #6366f1);
+}
+
+:deep(.enhanced-admin-menu .ant-menu-item-selected) {
+  background-color: rgba(99, 102, 241, 0.12) !important;
+  color: var(--primary-color, #6366f1) !important;
+}
+
+/* 深色模式适配 */
+:global([data-theme="dark"]) .enhanced-admin-menu {
+  background: #262626;
+}
+
+:global([data-theme="dark"]) :deep(.enhanced-admin-dropdown) {
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.3), 0 3px 6px rgba(0, 0, 0, 0.2);
+}
+
+:global([data-theme="dark"]) :deep(.enhanced-admin-menu .ant-menu-item:hover) {
+  background-color: rgba(129, 140, 248, 0.15);
+}
+
+:global([data-theme="dark"]) :deep(.enhanced-admin-menu .ant-menu-item-selected) {
+  background-color: rgba(129, 140, 248, 0.2) !important;
 }
 </style>

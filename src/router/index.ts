@@ -4,6 +4,7 @@ import HomePage from '@/pages/home/HomePage.vue';
 import { useUserStore } from '@/stores/user';
 import { App, h, render } from 'vue';
 import { Modal, message } from 'ant-design-vue';
+import ImageDetailPage from "@/pages/photo/PhotoDetailPage.vue";
 
 // 定义需要鉴权的路由
 const authRoutes = ['UserManagement', 'ImageManagement', 'TagManagement', 'SpaceManagement'];
@@ -18,6 +19,12 @@ const routes: Array<RouteRecordRaw> = [
             requiresAuth: false
         },
     },
+    {
+        path: '/photo/:id',
+        name: 'PhotoDetailPage',
+        component: ImageDetailPage,
+        props: true
+    }
     // {
     //     path: '/user',
     //     name: 'UserManagement',

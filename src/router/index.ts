@@ -5,6 +5,7 @@ import { useUserStore } from '@/stores/user';
 import { App, h, render } from 'vue';
 import { Modal, message } from 'ant-design-vue';
 import ImageDetailPage from "@/pages/photo/PhotoDetailPage.vue";
+import MySpacePage from "@/pages/space/MySpacePage.vue";
 
 // 定义需要鉴权的路由
 const authRoutes = ['UserManagement', 'ImageManagement', 'TagManagement', 'SpaceManagement'];
@@ -23,8 +24,17 @@ const routes: Array<RouteRecordRaw> = [
         path: '/photo/:id',
         name: 'PhotoDetailPage',
         component: ImageDetailPage,
-        props: true
-    }
+        props: true,
+    },
+    {
+        path: '/space',
+        name: 'MySpacePage',
+        component: MySpacePage,
+        meta: {
+            title: '我的空间',
+            requiresAuth: true
+        },
+    },
     // {
     //     path: '/user',
     //     name: 'UserManagement',

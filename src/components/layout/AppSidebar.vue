@@ -9,10 +9,10 @@
       collapsible
   >
     <!-- 顶部标题区域 -->
-    <div class="sidebar-header">
+    <div class="sidebar-header" @click="navigateToHome">
       <div class="logo-container">
         <div class="logo-icon-wrapper">
-          <cloud-outlined class="logo-icon" />
+          <cloud-outlined class="logo-icon"/>
         </div>
         <h1 class="logo-title" v-if="!collapsedValue">智能云图库</h1>
       </div>
@@ -29,9 +29,9 @@
             v-for="item in mainMenuItems"
             :key="item.key"
             :class="['menu-item', {'active': selectedKeys.includes(item.key)}]"
-            @click="selectMenuItem(item.key)"
+            @click="navigateTo(item.key, item.path)"
         >
-          <component :is="item.icon" class="menu-item-icon" />
+          <component :is="item.icon" class="menu-item-icon"/>
           <span class="menu-item-label" v-if="!collapsedValue">{{ item.label }}</span>
         </div>
       </div>
@@ -45,9 +45,9 @@
             v-for="item in favoriteMenuItems"
             :key="item.key"
             :class="['menu-item', {'active': selectedKeys.includes(item.key)}]"
-            @click="selectMenuItem(item.key)"
+            @click="navigateTo(item.key, item.path)"
         >
-          <component :is="item.icon" class="menu-item-icon" />
+          <component :is="item.icon" class="menu-item-icon"/>
           <span class="menu-item-label" v-if="!collapsedValue">{{ item.label }}</span>
         </div>
       </div>
@@ -61,7 +61,9 @@
           block
           @click="handleCreateTeam"
       >
-        <template #icon><plus-outlined /></template>
+        <template #icon>
+          <plus-outlined/>
+        </template>
         <span v-if="!collapsedValue">创建新团队</span>
       </a-button>
     </div>
@@ -69,7 +71,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue';
+import {ref, computed, watch} from 'vue';
 import {
   CloudOutlined,
   PictureOutlined,
@@ -81,6 +83,18 @@ import {
   ClockCircleOutlined,
   PlusOutlined
 } from '@ant-design/icons-vue';
+import {useRoute, useRouter} from "vue-router";
+import {useMenuStore} from '@/stores/menu';
+
+// 获取路由实例
+const router = useRouter();
+const route = useRoute();
+
+// 获取菜单状态
+const menuStore = useMenuStore();
+
+// 使用共享的选中状态
+const selectedKeys = computed(() => menuStore.sideSelectedKeys);
 
 // 接收props
 const props = defineProps({
@@ -99,8 +113,6 @@ const collapsedValue = computed({
   set: (value) => emit('update:collapsed', value)
 });
 
-// 选中的菜单项
-const selectedKeys = ref(['public-gallery']);
 
 // 主要菜单数据
 const mainMenuItems = [
@@ -108,21 +120,25 @@ const mainMenuItems = [
     key: 'public-gallery',
     icon: PictureOutlined,
     label: '公共图库',
+    path: '/' // 公共图库和首页是同一个页面
   },
   {
     key: 'my-space',
     icon: FolderOutlined,
     label: '我的空间',
+    path: '/space'
   },
   {
     key: 'team-collaboration',
     icon: TeamOutlined,
     label: '团队协作',
+    path: '/team'
   },
   {
     key: 'explore',
     icon: CompassOutlined,
     label: '探索发现',
+    path: '/explore'
   },
 ];
 
@@ -132,28 +148,63 @@ const favoriteMenuItems = [
     key: 'my-favorites',
     icon: HeartOutlined,
     label: '我的收藏',
+    path: '/favorites'
   },
   {
     key: 'saved',
     icon: BookOutlined,
     label: '已保存',
+    path: '/saved'
   },
   {
     key: 'recent-viewed',
     icon: ClockCircleOutlined,
     label: '最近浏览',
+    path: '/recent'
   },
 ];
 
-// 菜单项选择处理
-const selectMenuItem = (key) => {
-  selectedKeys.value = [key];
+
+// 根据当前路由更新选中的菜单项
+watch(() => route.path, (newPath) => {
+  // 只有当顶部菜单未被激活时，才更新侧边栏菜单状态
+  if (menuStore.activeMenuType !== 'top') {
+    if (newPath === '/' || newPath === '/home') {
+      menuStore.activateSideMenu('public-gallery');
+    } else if (newPath === '/space') {
+      menuStore.activateSideMenu('my-space');
+    } else if (newPath === '/team') {
+      menuStore.activateSideMenu('team-collaboration');
+    } else if (newPath === '/explore') {
+      menuStore.activateSideMenu('explore');
+    } else if (newPath === '/favorites') {
+      menuStore.activateSideMenu('my-favorites');
+    } else if (newPath === '/saved') {
+      menuStore.activateSideMenu('saved');
+    } else if (newPath === '/recent') {
+      menuStore.activateSideMenu('recent-viewed');
+    }
+  }
+}, {immediate: true});
+
+
+// 导航函数
+const navigateTo = (key: any, path: any) => {
+  menuStore.activateSideMenu(key); // 激活侧边栏菜单
+  router.push(path);
+};
+
+// 导航到首页
+const navigateToHome = () => {
+  menuStore.activateSideMenu('public-gallery'); // 激活侧边栏菜单
+  router.push('/');
 };
 
 // 创建团队处理函数
 const handleCreateTeam = () => {
-  console.log('创建新团队');
+  router.push('/team/create');
 };
+
 </script>
 
 <style scoped>

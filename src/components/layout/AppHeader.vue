@@ -3,13 +3,15 @@
   <a-layout-header class="app-header">
     <!-- 左侧导航区域 -->
     <div class="header-left">
-      <!-- 主菜单项（首页、创建图片）-->
+      <!-- 主菜单项-->
       <a-menu
           v-model:selectedKeys="selectedKeys"
           mode="horizontal"
           :items="mainMenuItems"
           class="header-nav-menu"
+          @select="handleMenuSelect"
       ></a-menu>
+
 
       <!-- 内容管理下拉菜单 - 仅当用户为管理员时显示 -->
       <a-dropdown
@@ -26,7 +28,7 @@
           </div>
         </a>
         <template #overlay>
-          <a-menu class="enhanced-admin-menu">
+          <a-menu class="enhanced-admin-menu" @click="handleAdminMenuClick">
             <a-menu-item key="dashboard" class="menu-item-with-icon">
               <div class="menu-item-content">
                 <dashboard-outlined />
@@ -82,7 +84,7 @@
           </div>
         </a>
         <template #overlay>
-          <a-menu class="enhanced-admin-menu">
+          <a-menu class="enhanced-admin-menu" @click="handleSettingsMenuClick">
             <a-menu-item key="user-management" class="menu-item-with-icon">
               <div class="menu-item-content">
                 <user-outlined />
@@ -131,19 +133,6 @@
           上传图片
         </a-button>
 
-        <!-- 深色模式切换按钮 -->
-        <a-button
-            type="text"
-            class="theme-toggle-btn"
-            @click="toggleDarkMode"
-            shape="circle"
-        >
-          <template #icon>
-            <moon-outlined v-if="!isDarkMode" />
-            <sun-outlined v-else />
-          </template>
-        </a-button>
-
         <!-- 通知按钮 -->
         <a-badge dot>
           <a-button type="text" class="notification-btn" shape="circle">
@@ -157,7 +146,7 @@
             <a-avatar :src="userStore.userInfo?.avatar" />
           </a>
           <template #overlay>
-            <a-menu>
+            <a-menu @click="handleUserMenuClick">
               <a-menu-item key="profile">
                 <user-outlined />
                 个人资料
@@ -180,7 +169,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, inject, h, computed } from 'vue';
+import {ref, reactive, h, watch, computed} from 'vue';
 import {
   HomeOutlined,
   PlusOutlined,
@@ -188,7 +177,6 @@ import {
   PictureOutlined,
   TagsOutlined,
   InboxOutlined,
-  ReadOutlined,
   UploadOutlined,
   BellOutlined,
   SettingOutlined,
@@ -199,24 +187,25 @@ import {
   SafetyOutlined,
   LoginOutlined,
   LogoutOutlined,
-  LockOutlined
 } from '@ant-design/icons-vue';
+
 
 import { useUserStore } from '@/stores/user';
 import { message } from 'ant-design-vue';
+import {useRoute, useRouter} from "vue-router";
+import { useMenuStore } from '@/stores/menu';
 
-// 获取用户状态存储
+// 获取路由实例
+const router = useRouter();
+const route = useRoute()
+
+// 获取用户状态和菜单状态
 const userStore = useUserStore();
+const menuStore = useMenuStore();
 
-// 从 App.vue 中注入的深色模式状态和切换函数
-const isDarkMode = inject('isDarkMode', ref(false));
-const toggleDarkMode = inject('toggleDarkMode', () => {});
+// 使用共享的选中状态
+const selectedKeys = computed(() => menuStore.topSelectedKeys);
 
-// 当前选中的导航
-const selectedKeys = ref(['home']);
-
-// 判断是否为管理员（基于用户角色）
-const isAdmin = computed(() => userStore.isAdmin);
 
 // 打开登录弹窗
 const openLoginModal = () => {
@@ -242,6 +231,98 @@ const mainMenuItems = reactive([
     label: '创建图片',
   },
 ]);
+
+// 处理菜单选择
+const handleMenuSelect = ({ key }: any) => {
+  menuStore.activateTopMenu(key); // 激活顶部菜单
+
+  switch (key) {
+    case 'home':
+      router.push('/');
+      break;
+    case 'create':
+      router.push('/create');
+      break;
+    default:
+      break;
+  }
+};
+
+// 处理管理菜单点击
+const handleAdminMenuClick = ({ key } :any) => {
+  // 根据key判断跳转路由
+  switch (key) {
+    case 'dashboard':
+      router.push('/admin/dashboard');
+      break;
+    case 'image-management':
+      router.push('/admin/images');
+      break;
+    case 'space-management':
+      router.push('/admin/spaces');
+      break;
+    case 'category-management':
+      router.push('/admin/categories');
+      break;
+    case 'tag-management':
+      router.push('/admin/tags');
+      break;
+    case 'comment-management':
+      router.push('/admin/comments');
+      break;
+    default:
+      break;
+  }
+};
+
+// 处理设置菜单点击
+const handleSettingsMenuClick = ({ key } :any) => {
+  switch (key) {
+    case 'user-management':
+      router.push('/admin/users');
+      break;
+    case 'system-settings':
+      router.push('/admin/settings');
+      break;
+    case 'security-center':
+      router.push('/admin/security');
+      break;
+    default:
+      break;
+  }
+};
+
+// 处理用户菜单点击
+const handleUserMenuClick = ({ key } :any) => {
+  switch (key) {
+    case 'profile':
+      router.push('/user/profile');
+      break;
+    case 'settings':
+      router.push('/user/settings');
+      break;
+    default:
+      break;
+  }
+};
+
+// 导航到上传页面
+const navigateToUpload = () => {
+  router.push('/upload');
+};
+
+// 监听路由变化，更新菜单状态
+watch(() => route.path, (newPath) => {
+  // 只有当侧边栏菜单未被激活时，才更新顶部菜单状态
+  if (menuStore.activeMenuType !== 'side') {
+    if (newPath === '/' || newPath === '/home') {
+      menuStore.activateTopMenu('home');
+    } else if (newPath === '/create') {
+      menuStore.activateTopMenu('create');
+    }
+  }
+}, { immediate: true });
+
 
 // 暴露方法给父组件
 defineExpose({
